@@ -1564,10 +1564,9 @@
             resultBox.style.display = 'none';
             
             try {
-                // Corrected endpoint from test probing
-                const url = 'https://uat.apnacred.com/api/partner/dedupe';
+                // Call local/Vercel serverless proxy endpoint to bypass CORS and hide Bearer token
+                const url = '/api/dedupe';
                 const headers = {
-                    'Authorization': 'Bearer YXBuYWNyZWRfZTBkZWE5NWZjZTRhNWU2NzpDM25CSGlXQjZpS1dMZU43enB4RXAxdmY1R3JsSjRJQw==',
                     'Content-Type': 'application/json'
                 };
                 const body = JSON.stringify({ pan: pan });
