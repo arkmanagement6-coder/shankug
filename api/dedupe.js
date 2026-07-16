@@ -19,10 +19,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'PAN number is required' });
     }
 
+    // Use environment variable if available, otherwise fallback to the hardcoded token
+    const token = process.env.APNACRED_BEARER_TOKEN || 'YXBuYWNyZWRfZTBkZWE5NWZjZTRhNWU2NzpDM25CSGlXQjZpS1dMZU43enB4RXAxdmY1R3JsSjRJQw==';
+
     const response = await fetch('https://uat.apnacred.com/api/partner/dedupe', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer YXBuYWNyZWRfZTBkZWE5NWZjZTRhNWU2NzpDM25CSGlXQjZpS1dMZU43enB4RXAxdmY1R3JsSjRJQw==',
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ pan })
