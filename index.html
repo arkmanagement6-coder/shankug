@@ -925,6 +925,107 @@
                 padding: 24px;
             }
         }
+
+        /* --- PAN DEDUPE MODAL STYLES --- */
+        .dedupe-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .dedupe-modal-overlay.active {
+            opacity: 1;
+        }
+
+        .dedupe-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transform: scale(0.8);
+            transition: var(--transition);
+        }
+
+        .dedupe-modal-overlay.active .dedupe-modal-content {
+            transform: scale(1);
+        }
+
+        .dedupe-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition);
+            background: none;
+            border: none;
+        }
+
+        .dedupe-modal-close:hover {
+            color: var(--text-dark);
+            transform: scale(1.1);
+        }
+
+        .dedupe-modal-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .dedupe-modal-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        .dedupe-result-box {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .dedupe-result-box.success {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.2);
+            color: #1e7e34;
+        }
+
+        .dedupe-result-box.error {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            color: #bd2130;
+        }
+
+        .dedupe-result-box.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.2);
+            color: #d39e00;
+        }
+
+        @media (max-width: 768px) {
+            .nav-menu li .btn {
+                margin: 10px 0 0 0 !important;
+                width: 80%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -944,6 +1045,7 @@
                 <li><a class="nav-link" onclick="switchPage('services-target')">Services</a></li>
                 <li><a class="nav-link" onclick="switchPage('contact')">Become Partner</a></li>
                 <li><a class="nav-link" onclick="switchPage('contact')">Contact</a></li>
+                <li><button class="btn btn-outline" onclick="openDedupeModal()" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 20px; margin-left: 10px; border-color: var(--secondary); color: var(--secondary); background: transparent; cursor: pointer; transition: var(--transition);">PAN Dedupe</button></li>
             </ul>
         </div>
     </header>
@@ -1299,6 +1401,26 @@
         </div>
     </footer>
 
+    <!-- PAN DEDUPE MODAL -->
+    <div id="dedupeModal" class="dedupe-modal-overlay">
+        <div class="dedupe-modal-content">
+            <button class="dedupe-modal-close" onclick="closeDedupeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="dedupe-modal-title">PAN Dedupe Check</h3>
+            <p class="dedupe-modal-subtitle">Verify if a PAN number already exists in the system database.</p>
+            
+            <form id="dedupeForm" onsubmit="handleDedupeSubmit(event)">
+                <div class="form-group">
+                    <label for="panInput">PAN Card Number</label>
+                    <input type="text" id="panInput" class="form-control" placeholder="e.g. ABCDE1234F" required maxlength="10" minlength="10" style="text-transform: uppercase;">
+                    <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 4px; display: block;">Enter standard 10-character PAN number</small>
+                </div>
+                <button type="submit" id="dedupeSubmitBtn" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">Check Dedupe</button>
+            </form>
+            
+            <div id="dedupeResult" class="dedupe-result-box"></div>
+        </div>
+    </div>
+
     <!-- FLOATING COMMUNICATION WIDGET LAYER -->
     <div class="floating-action-container">
         <a href="https://wa.me/917042921563" class="float-btn float-whatsapp" target="_blank" title="Chat via WhatsApp" aria-label="WhatsApp Client Portal">
@@ -1385,6 +1507,106 @@
             e.preventDefault();
             alert('Thank you for connecting with GigSathi Management Services! Your registration parameters have been securely captured. Our systems operations desks will get back to you shortly.');
             document.getElementById('leadForm').reset();
+        }
+
+        // PAN Dedupe Modal Functions
+        function openDedupeModal() {
+            // Collapse Mobile Navigation if opened
+            navMenu.classList.remove('active');
+            document.getElementById('menuToggle').querySelector('i').className = 'fa-solid fa-bars';
+            
+            const modal = document.getElementById('dedupeModal');
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('active');
+            }, 10);
+        }
+
+        function closeDedupeModal() {
+            const modal = document.getElementById('dedupeModal');
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                // Reset form and results
+                document.getElementById('dedupeForm').reset();
+                const resultBox = document.getElementById('dedupeResult');
+                resultBox.style.display = 'none';
+                resultBox.className = 'dedupe-result-box';
+                resultBox.innerHTML = '';
+            }, 400);
+        }
+
+        // Handle PAN Input Capitalization
+        document.getElementById('panInput').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+        });
+
+        async function handleDedupeSubmit(e) {
+            e.preventDefault();
+            const panInput = document.getElementById('panInput');
+            const submitBtn = document.getElementById('dedupeSubmitBtn');
+            const resultBox = document.getElementById('dedupeResult');
+            
+            const pan = panInput.value.trim().toUpperCase();
+            
+            // Validate PAN regex (5 alphabets, 4 digits, 1 alphabet)
+            const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+            if (!panRegex.test(pan)) {
+                resultBox.className = 'dedupe-result-box error';
+                resultBox.innerHTML = '<strong>Validation Error:</strong> Please enter a valid PAN number format (e.g. ABCDE1234F).';
+                resultBox.style.display = 'block';
+                return;
+            }
+            
+            // Set loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking...';
+            resultBox.style.display = 'none';
+            
+            try {
+                // Corrected endpoint from test probing
+                const url = 'https://uat.apnacred.com/api/partner/dedupe';
+                const headers = {
+                    'Authorization': 'Bearer YXBuYWNyZWRfZTBkZWE5NWZjZTRhNWU2NzpDM25CSGlXQjZpS1dMZU43enB4RXAxdmY1R3JsSjRJQw==',
+                    'Content-Type': 'application/json'
+                };
+                const body = JSON.stringify({ pan: pan });
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: body
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultBox.className = 'dedupe-result-box success';
+                    resultBox.innerHTML = `<strong>Success:</strong> PAN check completed.<br><pre style="white-space: pre-wrap; font-size: 0.8rem; margin-top: 8px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px;">${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    // Check if it's a database connection issue
+                    if (data.code === 'DATABASE_CONNECTION_ERROR') {
+                        resultBox.className = 'dedupe-result-box warning';
+                        resultBox.innerHTML = `<strong>API Status ${response.status} (Database Error):</strong><br>The API server received the request, but it cannot connect to its database right now.<br><br><strong>Response Message:</strong> ${data.message}`;
+                    } else {
+                        resultBox.className = 'dedupe-result-box error';
+                        resultBox.innerHTML = `<strong>Error ${response.status}:</strong> ${data.message || 'Something went wrong.'}<br><pre style="white-space: pre-wrap; font-size: 0.8rem; margin-top: 8px; background: rgba(0,0,0,0.05); padding: 8px; border-radius: 4px;">${JSON.stringify(data, null, 2)}</pre>`;
+                    }
+                }
+            } catch (error) {
+                console.error('PAN Dedupe fetch error:', error);
+                // CORS or network error explanation
+                resultBox.className = 'dedupe-result-box error';
+                resultBox.innerHTML = `<strong>Network/CORS Error:</strong> Connection failed.<br><br>
+                <em>This usually happens because:</em><br>
+                1. The browser blocked the request due to <strong>CORS policy</strong> (Apnacred server needs to allow cross-origin requests).<br>
+                2. The UAT server is offline.<br><br>
+                <strong>Note for production:</strong> To avoid CORS issues and protect your Bearer Token, you should route this request through your backend server or a serverless proxy.`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Check Dedupe';
+                resultBox.style.display = 'block';
+            }
         }
     </script>
 </body>
